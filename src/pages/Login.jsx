@@ -29,7 +29,10 @@ const Login = () => {
                 grupo,
                 password,
             },{
-                withCredentials: true
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json'
+                  }
             });
             Swal.fire({
                 title: "¡Éxito!",
