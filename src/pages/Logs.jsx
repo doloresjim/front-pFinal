@@ -16,7 +16,7 @@ const Logs = () => {
     const [methodChartData, setMethodChartData] = useState(null); 
 console.log(logs);
     useEffect(() => {
-        axios.get("http://localhost:5001/getServer")
+        axios.get(`${process.env.REACT_APP_API_URL}/getServer`)
             .then(response => {
                 if (response.data.logs && response.data.logs.length > 0) {
                     setLogs(response.data.logs);

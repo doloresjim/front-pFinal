@@ -20,7 +20,7 @@ const Login = () => {
     const handleRegister = async (e) => { 
         e.preventDefault();
         try{
-            const res = await axios.post("http://localhost:5001/api/register", {
+            const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, {
                 email,
                 username,
                 nombre,
@@ -57,7 +57,7 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try{
-            const res = await axios.post("http://localhost:5001/login", { 
+            const res = await axios.post(`${process.env.REACT_APP_API_URL}/login`, { 
                 email,
                 password,
             });
@@ -88,7 +88,7 @@ const Login = () => {
         const verifyOTP = async (e) => {
             e.preventDefault();
             try {
-              const res = await axios.post("http://localhost:5001/verify-otp", {
+              const res = await axios.post(`${process.env.REACT_APP_API_URL}/verify-otp`, {
                 email,
                 token: otp,
               });
