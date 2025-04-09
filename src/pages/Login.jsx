@@ -31,7 +31,7 @@ const Login = () => {
             });
             Swal.fire({
                 title: "¡Éxito!",
-                text: "El usuario ha sido registrado correctamente",
+                text: "Usuario registrado correctamente",
                 icon: "success",
                 confirmButtonText: "OK"
             });
@@ -65,7 +65,7 @@ const Login = () => {
             console.log("ID del usuario:", idUs);
             Swal.fire({
                 title: "¡Éxito!",
-                text: "El usuario ha sido registrado correctamente",
+                text: "Usuario registrado correctamente",
                 icon: "success",
                 confirmButtonText: "OK"
             });
@@ -302,7 +302,7 @@ const Login = () => {
                     />
                     </div> 
                     <button className="btn btn-warning" style = {{ marginLeft: '110px'}}  type="submit">Verificar</button>
-                    <button className="btn btn-success" style = {{ marginLeft: '50px'}} onClick={() => setStep("login")}>Login</button>
+                    <button className="btn btn-success" style = {{ marginLeft: '55px'}} onClick={() => setStep("login")}>Login</button>
                     </form>
                 )}
 

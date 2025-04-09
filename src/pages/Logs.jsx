@@ -194,14 +194,14 @@ console.log(logs);
                             }
                         }}
                     />
-                ) : <p>Cargando datos...</p>}
+                ) : <p>Cargando todos los datos...</p>}
             </div>
             
             <h3 className="text-center" style={{marginTop: '50px'}}>Gráfica por metodo</h3>
             <div className="card p-3 mt-4">
-                {methodChartData ? <Bar data={methodChartData} options={{ responsive: true, plugins: { legend: { position: 'top' } } }} /> : <p>Cargando datos...</p>}
+                {methodChartData ? <Bar data={methodChartData} options={{ responsive: true, plugins: { legend: { position: 'top' } } }} /> : <p>Cargando todos los datos...</p>}
             </div>
-            <div className="text-center" style={{marginBottom: '100px', marginTop: '60px'}}>
+            <div className="text-center" style={{marginBottom: '120px', marginTop: '60px'}}>
                 <button className="btn btn-warning" onClick={() => navigate('/home')}>Ver Home</button>
             </div>
         </div>
