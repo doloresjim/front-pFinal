@@ -17,7 +17,7 @@ const Login = () => {
     const [otp, setOtp] = useState("");
     const [step, setStep] = useState("login"); 
 
-    const handleRegister = async (e) => { 
+    const handleRegister = async (e) => {
         e.preventDefault();
         try{
             const res = await axios.post("https://pfinal-back-1.onrender.com/api/register", {
@@ -175,6 +175,9 @@ const Login = () => {
                     </div>
                     <button type="submit" style = {{ marginLeft: '110px'}} className="btn btn-success">Aceptar</button> 
                     <button className="btn btn-primary" style = {{ marginLeft: '50px'}} onClick={() => setStep("registro")}>Registro</button>
+                    <div className="text-center mt-3">
+                        <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
+                    </div>
                     </form>
                 )}
 
@@ -319,4 +322,7 @@ const Login = () => {
 };
 
 export default Login;
+
+ 
+
 
