@@ -17,7 +17,7 @@ const ForgotPassword = () => {
       
       Swal.fire({
         icon: 'success',
-        title: 'Solicitud enviada',
+        title: 'Siw solicitud enviada',
         text: 'Si el correo existe en nuestra base de datos, recibirás instrucciones para restablecer tu contraseña.',
       });
       

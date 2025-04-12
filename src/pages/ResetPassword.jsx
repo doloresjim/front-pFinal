@@ -14,8 +14,7 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  useEffect(() => {
-    // Obtener userId de la URL
+  useEffect(() => { 
     const params = new URLSearchParams(location.search);
     const id = params.get('userId');
     if (id) {
@@ -63,7 +62,7 @@ const ResetPassword = () => {
       if (response.data.success) {
         Swal.fire({
           icon: 'success',
-          title: '¡Éxito!',
+          title: '¡Siw!',
           text: 'Tu contraseña ha sido actualizada correctamente',
         });
         navigate('/login');
