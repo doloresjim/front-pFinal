@@ -250,7 +250,7 @@ const Logs = () => {
 
     return (
         <div className="container mt-4">
-            <h2 className="text-center mb-4">Monitor de Logs</h2>
+            <h2 className="text-center mb-3">Monitor de Logs</h2>
             
             {error && (
                 <div className="alert alert-danger alert-dismissible fade show">
@@ -263,7 +263,7 @@ const Logs = () => {
                 </div>
             )}
 
-            <div className="d-flex justify-content-between mb-4">
+            <div className="d-flex justify-content-between mb-6">
                 <button 
                     className="btn btn-primary"
                     onClick={fetchLogs}
