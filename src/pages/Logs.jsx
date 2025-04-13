@@ -29,6 +29,8 @@ console.log(logs);
             .catch(error => console.error("Error obteniendo logs: ", error));
     }, []);
 
+    console.log(logs);
+
     const procesarDatos = (logs) => {
         let cantidadServidor1_info = 0;
         let cantidadServidor1_warn = 0;
