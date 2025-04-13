@@ -141,7 +141,11 @@ const Logs = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/getServer`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/getServer`, {
+                headers: {
+                    'x-action-type': 'consulta_logs'
+                }
+            });
             if (response.data?.logs) {
                 setLogs(response.data.logs);
             } else {
@@ -154,6 +158,7 @@ const Logs = () => {
             setIsLoading(false);
         }
     };
+    
 
     useEffect(() => {
         fetchLogs();
