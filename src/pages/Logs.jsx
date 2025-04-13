@@ -148,9 +148,9 @@ const Logs = () => {
 
             try {
                 let date;
-                
+            
                 // Manejar diferentes formatos de timestamp
-                if (log.timestamp._seconds) {
+                if (log.timestamp?._seconds) {
                     date = new Date(log.timestamp._seconds * 1000);
                 } else if (typeof log.timestamp === 'string') {
                     date = new Date(log.timestamp);
@@ -159,20 +159,22 @@ const Logs = () => {
                 } else {
                     return;
                 }
-
+            
                 // Validar que la fecha sea válida
                 if (isNaN(date.getTime())) return;
-
-                const dateString = date.toISOString().split('T')[0];
-
+            
+                // Obtener la fecha local en formato YYYY-MM-DD
+                const dateString = date.toLocaleDateString('sv-SE'); // Formato ISO sin hora (ej: "2025-04-13")
+            
                 if (log.server === 1) {
                     serverData.server1[dateString] = (serverData.server1[dateString] || 0) + 1;
                 } else if (log.server === 2) {
                     serverData.server2[dateString] = (serverData.server2[dateString] || 0) + 1;
                 }
-            } catch (e) {
-                console.warn("Error procesando fecha, registro omitido:", e);
+            } catch (error) {
+                console.error("Error procesando log:", error);
             }
+            
         });
 
         const allDates = [...new Set([
