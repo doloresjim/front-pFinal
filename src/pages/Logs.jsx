@@ -166,7 +166,7 @@ const Logs = () => {
 
     return (
         <div className="container mt-4">
-            <h2 className="text-center mb-4">Dashboard de Monitoreo "Graficas"</h2>
+            <h2 className="text-center mb-4">Dashboard de Monitoreo</h2>
             
             {error && (
                 <div className="alert alert-danger">
