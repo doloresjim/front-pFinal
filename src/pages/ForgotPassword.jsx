@@ -12,22 +12,32 @@ const ForgotPassword = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/request-password-reset`, { email });
-      
+    try { 
+      const response = await axios.post(
+        'https://pfinal-back-1.onrender.com/request-password-reset',
+        { email },
+        { 
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+      console.log(response.data.message);
       Swal.fire({
         icon: 'success',
-        title: 'Siw solicitud enviada',
+        title: 'Solicitud enviada',
         text: 'Si el correo existe en nuestra base de datos, recibirás instrucciones para restablecer tu contraseña.',
       });
       
       setEmail('');
     } catch (error) {
       console.error('Error al solicitar recuperación:', error);
+      // Mostrar mensaje de error más específico si está disponible
+      const errorMessage = error.response?.data?.message || 'Ocurrió un error al procesar tu solicitud. Inténtalo de nuevo más tarde.';
+      
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Ocurrió un error al procesar tu solicitud. Inténtalo de nuevo más tarde.',
+        text: errorMessage,
       });
     } finally {
       setIsLoading(false);
