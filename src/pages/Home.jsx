@@ -28,7 +28,8 @@ const Home = () => {
           <h5>Alumn@: Salinas Jiménez María Dolores</h5>
           <br />
           <h5>Grado: Técnico Superior Universitario (TSU)</h5>
-          <br /> 
+          <br />
+          <h5 style={{marginBottom: '200px'}}>Maestro: Emmanuel Martínez Hernández</h5>
           <hr style={{height:'3px', backgroundColor: 'black', border: 'none' }} />
           <h4 className="mt-3" style={{textAlign: 'center', paddingTop: '100px'}}>Descripción de la app:</h4> 
           <p className="text-justify" style={{textAlign: 'justify', paddingBottom: '300px', paddingLeft: '30px', paddingRight: '30px'}}>
