@@ -1,87 +1,95 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import Swal from 'sweetalert2';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Link } from 'react-router-dom';
 
-const ForgotPassword = () => {
+function PasswordResetRequest() {
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleRequest = async () => {
+    try {
+      const response = await fetch('https://pfinal-back-1.onrender.com/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
 
-    try { 
-      const response = await axios.post(
-        'https://pfinal-back-1.onrender.com/request-password-reset',
-        { email },
-        { 
-          withCredentials: true,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-      console.log(response.data.message);
-      Swal.fire({
-        icon: 'success',
-        title: 'Solicitud enviada',
-        text: 'Si el correo existe en nuestra base de datos, recibirás instrucciones para restablecer tu contraseña.',
-      });
-      
-      setEmail('');
-    } catch (error) {
-      console.error('Error al solicitar recuperación:', error);
-      // Mostrar mensaje de error más específico si está disponible
-      const errorMessage = error.response?.data?.message || 'Ocurrió un error al procesar tu solicitud. Inténtalo de nuevo más tarde.';
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
+      const data = await response.json();
+
+      if (data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Token generado',
+          html: `
+            <p><b>Token:</b> <code>${data.resetToken}</code></p>
+            <p>Ingresa el código MFA y tu nueva contraseña.</p>
+          `,
+          confirmButtonText: 'Continuar',
+        }).then(() => {
+          showResetForm(data.resetToken);
+        });
+      } else {
+        Swal.fire('Aviso', data.message, 'info');
+      }
+    } catch (err) {
+      Swal.fire('Error', 'Ocurrió un error al solicitar el token', 'error');
     }
   };
 
+  const showResetForm = (token) => {
+    Swal.fire({
+      title: 'Restablecer contraseña',
+      html: `
+        <input id="mfa" class="swal2-input" placeholder="Código MFA">
+        <input id="newPass" type="password" class="swal2-input" placeholder="Nueva contraseña">
+      `,
+      confirmButtonText: 'Cambiar',
+      preConfirm: async () => {
+        const mfaCode = document.getElementById('mfa').value;
+        const newPassword = document.getElementById('newPass').value;
+
+        if (!mfaCode || !newPassword) {
+          Swal.showValidationMessage('Todos los campos son requeridos');
+          return false;
+        }
+
+        try {
+          const res = await fetch('http://localhost:5001/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              resetToken: token,
+              mfaCode,
+              newPassword
+            })
+          });
+
+          const resData = await res.json();
+
+          if (!res.ok) throw new Error(resData.message || 'Error');
+
+          Swal.fire('Listo', 'Contraseña actualizada correctamente', 'success');
+        } catch (err) {
+          Swal.fire('Error', err.message, 'error');
+        }
+      }
+    });
+  };
+
   return (
-    <div className="d-flex justify-content-center align-items-center bg-light" style={{ minHeight: '100vh' }}>
-      <div className="card shadow-lg p-4" style={{ width: '400px' }}>
-        <div className="card-body">
-          <h3 className="card-title text-center mb-4">Recuperar Contraseña</h3>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">Correo Electrónico</label>
-              <input
-                type="email"
-                className="form-control"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="Ingresa tu correo electrónico"
-              />
-            </div>
-            
-            <div className="d-grid gap-2">
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                disabled={isLoading}
-              >
-                {isLoading ? 'Enviando...' : 'Enviar Instrucciones'}
-              </button>
-            </div>
-          </form>
-          
-          <div className="text-center mt-3">
-            <Link to="/login">Volver al inicio de sesión</Link>
-          </div>
-        </div>
-      </div>
+    <div className="container mt-5">
+      <h3 className="mb-3">Recuperar contraseña</h3>
+      <input
+        type="email"
+        className="form-control mb-2"
+        placeholder="Correo electrónico"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button className="btn btn-primary" onClick={handleRequest}>
+        Solicitar cambio
+      </button>
     </div>
   );
-};
+}
 
-export default ForgotPassword;
+export default PasswordResetRequest;
