@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
@@ -31,8 +31,8 @@ const Logs = () => {
         }
     };
 
-    // Procesamiento de datos con useMemo para optimización
-    const { chartData, responseTimeData, dailyChartData, methodChartData } = useMemo(() => {
+    // Procesamiento de datos sin useMemo
+    const processLogsData = (logs) => {
         if (!logs || logs.length === 0) return {};
 
         // Inicializar contadores
@@ -108,10 +108,7 @@ const Logs = () => {
         };
 
         // Gráfico diario (necesita procesamiento adicional para fechas)
-        const allDates = [...new Set([
-            ...Object.keys(counters.daily.server1), 
-            ...Object.keys(counters.daily.server2)
-        ])].sort();
+        const allDates = [...new Set([ ...Object.keys(counters.daily.server1), ...Object.keys(counters.daily.server2) ])].sort();
         
         const dailyChart = {
             labels: allDates,
@@ -130,12 +127,12 @@ const Logs = () => {
         };
 
         return {
-            chartData: statusChart,
-            responseTimeData: timeChart,
-            methodChartData: methodChart,
-            dailyChartData: dailyChart
+            statusChart,
+            timeChart,
+            methodChart,
+            dailyChart
         };
-    }, [logs]);
+    };
 
     const fetchLogs = async () => {
         setIsLoading(true);
@@ -147,9 +144,10 @@ const Logs = () => {
                 }
             });
             if (response.data?.logs) {
-                setLogs(response.data.logs);
-            } else {
-                setError("Formato de datos inesperado");
+                // Compara si hay diferencia antes de setear
+                const fetchedLogs = response.data.logs;
+                const hasChanges = JSON.stringify(fetchedLogs) !== JSON.stringify(logs);
+                if (hasChanges) setLogs(fetchedLogs);
             }
         } catch (err) {
             setError(err.response?.data?.message || "Error obteniendo logs. Por favor intente nuevamente.");
@@ -158,11 +156,12 @@ const Logs = () => {
             setIsLoading(false);
         }
     };
-    
 
     useEffect(() => {
         fetchLogs();
     }, []);
+
+    const { statusChart, timeChart, methodChart, dailyChart } = processLogsData(logs);
 
     return (
         <div className="container mt-4">
@@ -193,8 +192,8 @@ const Logs = () => {
                                     <h5 className="card-title mb-0">Estados de Respuesta</h5>
                                 </div>
                                 <div className="card-body">
-                                    {chartData ? (
-                                        <Bar data={chartData} options={chartOptions} />
+                                    {statusChart ? (
+                                        <Bar data={statusChart} options={chartOptions} />
                                     ) : (
                                         <p className="text-muted">No hay datos disponibles</p>
                                     )}
@@ -208,8 +207,8 @@ const Logs = () => {
                                     <h5 className="card-title mb-0">Tiempos de Respuesta</h5>
                                 </div>
                                 <div className="card-body">
-                                    {responseTimeData ? (
-                                        <Bar data={responseTimeData} options={chartOptions} />
+                                    {timeChart ? (
+                                        <Bar data={timeChart} options={chartOptions} />
                                     ) : (
                                         <p className="text-muted">No hay datos disponibles</p>
                                     )}
@@ -225,9 +224,9 @@ const Logs = () => {
                                     <h5 className="card-title mb-0">Actividad por Fecha</h5>
                                 </div>
                                 <div className="card-body">
-                                    {dailyChartData ? (
+                                    {dailyChart ? (
                                         <Bar 
-                                            data={dailyChartData} 
+                                            data={dailyChart} 
                                             options={{
                                                 ...chartOptions,
                                                 scales: {
@@ -251,8 +250,8 @@ const Logs = () => {
                                     <h5 className="card-title mb-0">Métodos HTTP</h5>
                                 </div>
                                 <div className="card-body">
-                                    {methodChartData ? (
-                                        <Bar data={methodChartData} options={chartOptions} />
+                                    {methodChart ? (
+                                        <Bar data={methodChart} options={chartOptions} />
                                     ) : (
                                         <p className="text-muted">No hay datos disponibles</p>
                                     )}
