@@ -154,56 +154,40 @@ const Logs = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/getServer`, {
-                headers: {
-                    'x-action-type': 'consulta_logs'
+            // 1. Registrar el acceso y obtener logs en una sola llamada
+            const response = await axios.post(
+                `${process.env.REACT_APP_API_URL}/getLogs`, // Cambiado a un endpoint más claro
+                {
+                    action: 'get_and_register_logs', // Acción combinada
+                    details: {
+                        page: 'view_logs_page',
+                        timestamp: new Date().toISOString(),
+                    },
+                },
+                {
+                    headers: {
+                        'x-action-type': 'logs_operation', // Header único
+                    },
                 }
-            });
+            );
+    
+            // 2. Procesar la respuesta
             if (response.data?.logs) {
                 setLogs(response.data.logs);
+            } else {
+                setError("No se encontraron logs disponibles");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Error obteniendo logs. Por favor intente nuevamente.");
-            console.error("Error obteniendo logs:", err);
+            setError(err.response?.data?.message || "Error al cargar los logs. Intente nuevamente.");
+            console.error("Error en fetchLogs:", err);
         } finally {
             setIsLoading(false);
         }
     };
-
+    
     useEffect(() => {
-        const initializeLogs = async () => {
-            try {
-                // Registrar el acceso a la página
-                await axios.post(`${process.env.REACT_APP_API_URL}/getServer`, {
-                    action: 'registrar_log',
-                    details: {
-                        action: 'view_logs_page',
-                        timestamp: new Date().toISOString()
-                    }
-                }, {
-                    headers: {
-                        'x-action-type': 'registro_log'
-                    }
-                });
-                
-                // Obtener los logs
-                await fetchLogs();
-            } catch (err) {
-                console.error("Error inicializando logs:", err);
-                setError("Error al cargar los datos. Por favor recargue la página.");
-            }
-        };
-
-        initializeLogs();
-    }, []);
-
-    useEffect(() => {
-        if (logs.length > 0) {
-            const newData = processLogsData(logs);
-            setProcessedData(newData);
-        }
-    }, [logs]);
-
+        fetchLogs(); // Se ejecuta al montar/recargar el componente
+    }, []); // Dependencias vacías = solo al montar
     const { statusChart, timeChart, methodChart, dailyChart } = processedData;
 
     return (
