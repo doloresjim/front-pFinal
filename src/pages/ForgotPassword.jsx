@@ -1,96 +1,178 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import Swal from 'sweetalert2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-function PasswordResetRequest() {
+function ForgotPassword() {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRequest = async () => {
+  const handleRequest = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
     try {
-      const response = await fetch('https://pfinal-back-1.onrender.com/request-password-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/request-password-reset`, 
+        { email },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          validateStatus: (status) => status < 500 // Considerar todos los status < 500 como exitosos
+        }
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         Swal.fire({
           icon: 'success',
-          title: 'Token generado',
+          title: 'Proceso de recuperación iniciado',
           html: `
-            <p><b>Token:</b> <code>${data.resetToken}</code></p>
-            <p>Ingresa el código MFA y tu nueva contraseña.</p>
+            <p>Si el email existe en nuestro sistema, podrás usar el código MFA para restablecer tu contraseña.</p>
+            <p><small>Token: ${response.data.resetToken}</small></p>
           `,
           confirmButtonText: 'Continuar',
         }).then(() => {
-          showResetForm(data.resetToken);
+          showResetForm(response.data.resetToken, response.data.mfaSecret);
         });
       } else {
-        Swal.fire('Aviso', data.message, 'info');
+        Swal.fire({
+          icon: 'info',
+          title: 'Aviso',
+          text: response.data.message || 'Si el email existe, recibirás instrucciones.',
+          confirmButtonText: 'Entendido'
+        });
       }
-    } catch (err) {
-      Swal.fire('Error', 'Ocurrió un error al solicitar el token', 'error');
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Ocurrió un error al procesar tu solicitud',
+        confirmButtonText: 'Entendido'
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const showResetForm = (token) => {
+  const showResetForm = (resetToken, mfaSecret) => {
     Swal.fire({
       title: 'Restablecer contraseña',
       html: `
-        <input id="mfa" class="swal2-input" placeholder="Código MFA">
-        <input id="newPass" type="password" class="swal2-input" placeholder="Nueva contraseña">
+        <input id="mfaCode" class="swal2-input" placeholder="Código MFA (6 dígitos)" type="number">
+        <input id="newPassword" class="swal2-input" placeholder="Nueva contraseña" type="password">
+        <input id="confirmPassword" class="swal2-input" placeholder="Confirmar contraseña" type="password">
       `,
-      confirmButtonText: 'Cambiar',
+      focusConfirm: false,
       preConfirm: async () => {
-        const mfaCode = document.getElementById('mfa').value;
-        const newPassword = document.getElementById('newPass').value;
+        const mfaCode = document.getElementById('mfaCode').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
 
-        if (!mfaCode || !newPassword) {
+        // Validaciones
+        if (!mfaCode || !newPassword || !confirmPassword) {
           Swal.showValidationMessage('Todos los campos son requeridos');
           return false;
         }
 
+        if (newPassword !== confirmPassword) {
+          Swal.showValidationMessage('Las contraseñas no coinciden');
+          return false;
+        }
+
+        if (newPassword.length < 6) {
+          Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+          return false;
+        }
+
         try {
-          const res = await fetch(`${process.env.REACT_APP_API_URL}/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              resetToken: token,
+          const response = await axios.post(
+            `${process.env.REACT_APP_API_URL}/reset-password`,
+            {
+              resetToken,
               mfaCode,
               newPassword
-            })
-          });
+            },
+            {
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
 
-          const resData = await res.json();
-
-          if (!res.ok) throw new Error(resData.message || 'Error');
-
-          Swal.fire('Listo', 'Contraseña actualizada correctamente', 'success');
+          return response.data;
         } catch (error) {
-          console.error("Error en request-password-reset:", error);
-          res.status(500).json({ message: "Error en el servidor", error: error.message });
+          Swal.showValidationMessage(
+            error.response?.data?.message || 'Error al actualizar la contraseña'
+          );
+          return false;
         }
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar contraseña',
+      cancelButtonText: 'Cancelar',
+      allowOutsideClick: false
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        Swal.fire({
+          icon: 'success',
+          title: '¡Contraseña actualizada!',
+          text: 'Tu contraseña ha sido cambiada exitosamente',
+          confirmButtonText: 'Iniciar sesión'
+        }).then(() => {
+          window.location.href = '/login';
+        });
       }
     });
   };
 
   return (
     <div className="container mt-5">
-      <h3 className="mb-3">Recuperar contraseña</h3>
-      <input
-        type="email"
-        className="form-control mb-2"
-        placeholder="Correo electrónico"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <button className="btn btn-primary" onClick={handleRequest}>
-        Solicitar cambio
-      </button>
+      <div className="row justify-content-center">
+        <div className="col-md-6 col-lg-4">
+          <div className="card shadow">
+            <div className="card-body">
+              <h3 className="card-title text-center mb-4">Recuperar contraseña</h3>
+              <form onSubmit={handleRequest}>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    id="email"
+                    placeholder="Ingresa tu email registrado"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="d-grid gap-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Procesando...
+                      </>
+                    ) : (
+                      'Solicitar cambio'
+                    )}
+                  </button>
+                </div>
+              </form>
+              <div className="text-center mt-3">
+                <a href="/login" className="text-decoration-none">
+                  Volver al inicio de sesión
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default PasswordResetRequest;
+export default ForgotPassword;
