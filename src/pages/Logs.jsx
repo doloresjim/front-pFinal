@@ -290,7 +290,7 @@ const Logs = () => {
                     <div className="spinner-border text-primary" style={{width: '3rem', height: '3rem'}}>
                         <span className="visually-hidden">Cargando...</span>
                     </div>
-                    <p className="mt-3">Cargando datos de logs...</p>
+                    <p className="mt-3">Cargando todos los logs...</p>
                 </div>
             ) : (
                 <>
