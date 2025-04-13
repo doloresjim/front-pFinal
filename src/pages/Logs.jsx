@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
@@ -10,10 +10,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const Logs = () => {
     const navigate = useNavigate();
     const [logs, setLogs] = useState([]);
-    const [chartData, setChartData] = useState(null);
-    const [responseTimeData, setResponseTimeData] = useState(null);
-    const [dailyChartData, setDailyChartData] = useState(null);
-    const [methodChartData, setMethodChartData] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -35,172 +31,133 @@ const Logs = () => {
         }
     };
 
+    // Procesamiento de datos con useMemo para optimización
+    const { chartData, responseTimeData, dailyChartData, methodChartData } = useMemo(() => {
+        if (!logs || logs.length === 0) return {};
+
+        // Inicializar contadores
+        const counters = {
+            status: { server1: { info: 0, warn: 0, error: 0 }, server2: { info: 0, warn: 0, error: 0 } },
+            responseTime: { server1: { fast: 0, medium: 0, slow: 0 }, server2: { fast: 0, medium: 0, slow: 0 } },
+            methods: { server1: { POST: 0, GET: 0 }, server2: { POST: 0, GET: 0 } },
+            daily: { server1: {}, server2: {} }
+        };
+
+        logs.forEach(log => {
+            const serverKey = log.server === 1 ? 'server1' : 'server2';
+            
+            // Procesar estados HTTP
+            if ([200, 201, 204].includes(log.status)) counters.status[serverKey].info++;
+            else if ([300, 301, 302].includes(log.status)) counters.status[serverKey].warn++;
+            else if (log.status >= 400) counters.status[serverKey].error++;
+            
+            // Procesar tiempos de respuesta
+            if (log.responseTime < 200) counters.responseTime[serverKey].fast++;
+            else if (log.responseTime <= 500) counters.responseTime[serverKey].medium++;
+            else counters.responseTime[serverKey].slow++;
+            
+            // Procesar métodos HTTP
+            if (log.method === 'POST') counters.methods[serverKey].POST++;
+            else if (log.method === 'GET') counters.methods[serverKey].GET++;
+            
+            // Procesar por fecha
+            let dateString = 'Fecha desconocida';
+            if (log.timestamp) {
+                try {
+                    const date = log.timestamp._seconds 
+                        ? new Date(log.timestamp._seconds * 1000) 
+                        : new Date(log.timestamp);
+                    dateString = date.toISOString().split('T')[0];
+                } catch (e) {
+                    console.warn("Error procesando fecha:", log.timestamp);
+                }
+            }
+            counters.daily[serverKey][dateString] = (counters.daily[serverKey][dateString] || 0) + 1;
+        });
+
+        // Preparar datos para gráficos
+        const labels = ["Servidor 1", "Servidor 2"];
+        
+        // Gráfico de estados
+        const statusChart = {
+            labels,
+            datasets: [
+                { label: "Info", data: [counters.status.server1.info, counters.status.server2.info], backgroundColor: "rgba(54, 162, 235, 0.5)" },
+                { label: "Warn", data: [counters.status.server1.warn, counters.status.server2.warn], backgroundColor: "rgba(255, 159, 64, 0.5)" },
+                { label: "Error", data: [counters.status.server1.error, counters.status.server2.error], backgroundColor: "rgba(255, 99, 132, 0.5)" }
+            ]
+        };
+
+        // Gráfico de tiempos de respuesta
+        const timeChart = {
+            labels,
+            datasets: [
+                { label: "Rápido (<200ms)", data: [counters.responseTime.server1.fast, counters.responseTime.server2.fast], backgroundColor: "rgba(75, 192, 192, 0.5)" },
+                { label: "Medio (200-500ms)", data: [counters.responseTime.server1.medium, counters.responseTime.server2.medium], backgroundColor: "rgba(255, 205, 86, 0.5)" },
+                { label: "Lento (>500ms)", data: [counters.responseTime.server1.slow, counters.responseTime.server2.slow], backgroundColor: "rgba(255, 99, 132, 0.5)" }
+            ]
+        };
+
+        // Gráfico de métodos HTTP
+        const methodChart = {
+            labels,
+            datasets: [
+                { label: "POST", data: [counters.methods.server1.POST, counters.methods.server2.POST], backgroundColor: "rgba(54, 162, 235, 0.5)" },
+                { label: "GET", data: [counters.methods.server1.GET, counters.methods.server2.GET], backgroundColor: "rgba(255, 159, 64, 0.5)" }
+            ]
+        };
+
+        // Gráfico diario (necesita procesamiento adicional para fechas)
+        const allDates = [...new Set([
+            ...Object.keys(counters.daily.server1), 
+            ...Object.keys(counters.daily.server2)
+        ])].sort();
+        
+        const dailyChart = {
+            labels: allDates,
+            datasets: [
+                { 
+                    label: "Servidor 1", 
+                    data: allDates.map(date => counters.daily.server1[date] || 0), 
+                    backgroundColor: "rgba(54, 162, 235, 0.5)" 
+                },
+                { 
+                    label: "Servidor 2", 
+                    data: allDates.map(date => counters.daily.server2[date] || 0), 
+                    backgroundColor: "rgba(255, 159, 64, 0.5)" 
+                }
+            ]
+        };
+
+        return {
+            chartData: statusChart,
+            responseTimeData: timeChart,
+            methodChartData: methodChart,
+            dailyChartData: dailyChart
+        };
+    }, [logs]);
+
     const fetchLogs = async () => {
         setIsLoading(true);
         setError(null);
         try {
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/getServer`);
-            if (response.data.logs && response.data.logs.length > 0) {
+            if (response.data?.logs) {
                 setLogs(response.data.logs);
-                procesarDatos(response.data.logs);
-                procesarTiemposRespuesta(response.data.logs);
-                procesarDatosPorFecha(response.data.logs);
-                procesarDatosPorMethod(response.data.logs);
+            } else {
+                setError("Formato de datos inesperado");
             }
         } catch (err) {
-            setError("Error obteniendo logs. Por favor intente nuevamente.");
-            console.error("Error obteniendo logs: ", err);
+            setError(err.response?.data?.message || "Error obteniendo logs. Por favor intente nuevamente.");
+            console.error("Error obteniendo logs:", err);
         } finally {
             setIsLoading(false);
         }
     };
 
-
-console.log(logs);
-useEffect(() => {
-    fetchLogs();
-}, []);
-
-    console.log(logs);
-
-    const procesarDatos = (logs) => {
-        let cantidadServidor1_info = 0;
-        let cantidadServidor1_warn = 0;
-        let cantidadServidor1_error = 0;
-
-        let cantidadServidor2_info = 0;
-        let cantidadServidor2_warn = 0;
-        let cantidadServidor2_error = 0;
-
-        logs.forEach(log => {
-            if (log.server === 1) {
-                if ([200, 201, 204].includes(log.status)) cantidadServidor1_info++;
-                else if ([300, 301, 302].includes(log.status)) cantidadServidor1_warn++;
-                else if (log.status >= 400) cantidadServidor1_error++;
-            }
-            if (log.server === 2) {
-                if ([200, 201, 204].includes(log.status)) cantidadServidor2_info++;
-                else if ([300, 301, 302].includes(log.status)) cantidadServidor2_warn++;
-                else if (log.status >= 400) cantidadServidor2_error++;
-            }
-        });
-
-        const labels = ["Servidor 1", "Servidor 2"];
-        const valoresInfo = [cantidadServidor1_info, cantidadServidor2_info];
-        const valoresWarn = [cantidadServidor1_warn, cantidadServidor2_warn];
-        const valoresError = [cantidadServidor1_error, cantidadServidor2_error];
-
-        setChartData({
-            labels,
-            datasets: [
-                { label: "Info", data: valoresInfo, backgroundColor: "rgba(54, 162, 235, 0.5)", borderColor: "rgba(54, 162, 235, 1)", borderWidth: 1 },
-                { label: "Warn", data: valoresWarn, backgroundColor: "rgba(255, 159, 64, 0.5)", borderColor: "rgba(255, 159, 64, 1)", borderWidth: 1 },
-                { label: "Error", data: valoresError, backgroundColor: "rgba(255, 99, 132, 0.5)", borderColor: "rgba(255, 99, 132, 1)", borderWidth: 1 }
-            ]
-        });
-    };
-
-    const procesarTiemposRespuesta = (logs) => {
-        let servidor1_fast = 0;
-        let servidor1_medium = 0;
-        let servidor1_slow = 0;
-
-        let servidor2_fast = 0;
-        let servidor2_medium = 0;
-        let servidor2_slow = 0;
-
-        logs.forEach(log => {
-            if (log.server === 1) {
-                if (log.responseTime < 200) servidor1_fast++;
-                else if (log.responseTime >= 200 && log.responseTime <= 500) servidor1_medium++;
-                else servidor1_slow++;
-            }
-            if (log.server === 2) {
-                if (log.responseTime < 200) servidor2_fast++;
-                else if (log.responseTime >= 200 && log.responseTime <= 500) servidor2_medium++;
-                else servidor2_slow++;
-            }
-        });
-
-        const labels = ["Servidor 1", "Servidor 2"];
-        const fastData = [servidor1_fast, servidor2_fast];
-        const mediumData = [servidor1_medium, servidor2_medium];
-        const slowData = [servidor1_slow, servidor2_slow];
-
-        setResponseTimeData({
-            labels,
-            datasets: [
-                { label: "Rápido (<200ms)", data: fastData, backgroundColor: "rgba(75, 192, 192, 0.5)", borderColor: "rgba(75, 192, 192, 1)", borderWidth: 1 },
-                { label: "Medio (200-500ms)", data: mediumData, backgroundColor: "rgba(255, 205, 86, 0.5)", borderColor: "rgba(255, 205, 86, 1)", borderWidth: 1 },
-                { label: "Lento (>500ms)", data: slowData, backgroundColor: "rgba(255, 99, 132, 0.5)", borderColor: "rgba(255, 99, 132, 1)", borderWidth: 1 }
-            ]
-        });
-    };
-
-    const procesarDatosPorFecha = (logs) => {
-        const server1Days = {};
-        const server2Days = {};
-
-        logs.forEach(log => {
-            if (log.timestamp && log.timestamp._seconds && log.timestamp._nanoseconds) {
-                const date = new Date(log.timestamp._seconds * 1000 + log.timestamp._nanoseconds / 1000000);
-                const dateString = date.toISOString().split('T')[0];
-
-                if (log.server === 1) {
-                    server1Days[dateString] = (server1Days[dateString] || 0) + 1;
-                } else if (log.server === 2) {
-                    server2Days[dateString] = (server2Days[dateString] || 0) + 1;
-                }
-            } else {
-                console.warn("Registro con timestamp inválido:", log);
-            }
-        });
-
-        const allDates = [...new Set([...Object.keys(server1Days), ...Object.keys(server2Days)])].sort();
-        const valoresServidor1 = allDates.map(date => server1Days[date] || 0);
-        const valoresServidor2 = allDates.map(date => server2Days[date] || 0);
-
-        setDailyChartData({ // Actualiza el estado correcto
-            labels: allDates,
-            datasets: [
-                { label: "Servidor 1", data: valoresServidor1, backgroundColor: "rgba(54, 162, 235, 0.5)", borderColor: "rgba(54, 162, 235, 1)", borderWidth: 1 },
-                { label: "Servidor 2", data: valoresServidor2, backgroundColor: "rgba(255, 159, 64, 0.5)", borderColor: "rgba(255, 159, 64, 1)", borderWidth: 1 }
-            ]
-        });
-    };
-
-    const procesarDatosPorMethod = (logs) => { // Cambiar setChartData a setMethodChartData para evitar conflictos
-        let cantidadServidor1_POST = 0;
-        let cantidadServidor1_GET = 0;
-    
-        let cantidadServidor2_POST = 0;
-        let cantidadServidor2_GET = 0;
-    
-        logs.forEach(log => {
-            if (log.server === 1) {
-                if (log.method === 'POST') cantidadServidor1_POST++;
-                else if (log.method === 'GET') cantidadServidor1_GET++;
-            }
-            if (log.server === 2) {
-                if (log.method === 'POST') cantidadServidor2_POST++;
-                else if (log.method === 'GET') cantidadServidor2_GET++;
-            }
-        });
-    
-        const labels = ["Servidor 1", "Servidor 2"];
-        const valoresPOST = [cantidadServidor1_POST, cantidadServidor2_POST];
-        const valoresGET = [cantidadServidor1_GET, cantidadServidor2_GET];
-    
-        setMethodChartData({ // Usar setMethodChartData para actualizar el estado correcto
-            labels,
-            datasets: [
-                { label: "POST", data: valoresPOST, backgroundColor: "rgba(54, 162, 235, 0.5)", borderColor: "rgba(54, 162, 235, 1)", borderWidth: 1 },
-                { label: "GET", data: valoresGET, backgroundColor: "rgba(255, 159, 64, 0.5)", borderColor: "rgba(255, 159, 64, 1)", borderWidth: 1 }
-            ]
-        });
-    };
-
-    console.log('Server1');
+    useEffect(() => {
+        fetchLogs();
+    }, []);
 
     return (
         <div className="container mt-4">

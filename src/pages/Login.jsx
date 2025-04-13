@@ -20,7 +20,7 @@ const Login = () => {
     const handleRegister = async (e) => {
         e.preventDefault();
         try{
-            const res = await axios.post("https://pfinal-back-1.onrender.com/api/register", {
+            const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, {
                 email,
                 username,
                 nombre,
@@ -61,72 +61,102 @@ const Login = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        try{
+        try {
             const res = await axios.post(`${process.env.REACT_APP_API_URL}/login`, { 
                 email,
                 password,
             });
+            
+            console.log("Respuesta completa del login:", res.data);
             setIdUs(res.data.userId);
-            console.log("ID del usuario:", idUs);
+            
             Swal.fire({
                 title: "¡Éxito!",
-                text: "Usuario registrado correctamente",
+                text: "Inicio de sesión exitoso",
                 icon: "success",
                 confirmButtonText: "OK"
             });
-            if (res.data.requiresMFA) setStep("otp");
+            
+            if (res.data.requiresMFA) {
+                console.log("Se requiere MFA, procediendo a paso OTP");
+                setStep("otp");
+            }
+            
             cleanData(e);
-        }catch (error) {
-            console.error("Error al logetare: ", error);
-            Swal.fire({
-              title: "Error",
-              text: "Hubo un problema al logearte.",
-              icon: "error",
-              confirmButtonText: "OK"
+        } catch (error) {
+            console.error("Error completo en login:", {
+                error: error.response?.data || error.message,
+                request: { email },
+                timestamp: new Date().toISOString()
             });
-        }
-
-
-    };
-
-        console.log("Token OTP:", otp);
-        const verifyOTP = async (e) => {
-            e.preventDefault();
-            try {
-              const res = await axios.post(`${process.env.REACT_APP_API_URL}/verify-otp`, {
-                email,
-                token: otp,
-              });
-          
-              if (res.data.success) {
-                Swal.fire({
-                  title: "¡Éxito!",
-                  text: "Autenticado!",
-                  icon: "success",
-                  confirmButtonText: "OK"
-                }).then(()=> {
-                    window.location.href = `/home?idUs=${idUs}`;
-                });  
-              } else {
-                Swal.fire({
-                  title: "¡Nooo!",
-                  text: "Código inválido!",
-                  icon: "error",
-                  confirmButtonText: "OK"
-                });
-              }
-              
-              cleanData(e);
-            } catch (error) {
-              console.error("Error al verificar OTP:", error);
-              Swal.fire({
+            Swal.fire({
                 title: "Error",
-                text: "Hubo un problema al verificar el OTP",
+                text: error.response?.data?.message || "Hubo un problema al iniciar sesión",
                 icon: "error",
                 confirmButtonText: "OK"
-              });
-            }
-          };
+            });
+        }
+    };
+
+    // Agregar al inicio del componente
+console.log("Componente Login montado", { 
+    initialStep: step,
+    timestamp: new Date().toISOString() 
+});
+
+// Agregar en cada cambio de step
+useEffect(() => {
+    console.log("Paso cambiado:", step);
+}, [step]);
+
+        console.log("Token OTP:", otp);
+
+        const verifyOTP = async (e) => {
+    e.preventDefault();
+    console.log("Iniciando verificación OTP", { email, otp });
+    try {
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/verify-otp`, {
+            email,
+            token: otp,
+        });
+        
+        console.log("Respuesta OTP:", res.data);
+        
+        if (res.data.success) {
+            console.log("OTP verificado correctamente, redirigiendo...");
+            Swal.fire({
+                title: "¡Éxito!",
+                text: "Autenticación completada!",
+                icon: "success",
+                confirmButtonText: "OK"
+            }).then(() => {
+                window.location.href = `/home?idUs=${idUs}`;
+            });  
+        } else {
+            console.warn("OTP inválido proporcionado");
+            Swal.fire({
+                title: "Código incorrecto",
+                text: "El código OTP no es válido",
+                icon: "error",
+                confirmButtonText: "OK"
+            });
+        }
+        
+        cleanData(e);
+    } catch (error) {
+        console.error("Error en verificación OTP:", {
+            error: error.response?.data || error.message,
+            request: { email, otp },
+            timestamp: new Date().toISOString()
+        });
+        Swal.fire({
+            title: "Error",
+            text: error.response?.data?.message || "Hubo un problema al verificar el OTP",
+            icon: "error",
+            confirmButtonText: "OK"
+        });
+    }
+};
           
 
 
