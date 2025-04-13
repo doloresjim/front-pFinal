@@ -65,14 +65,29 @@ const Logs = () => {
             let dateString = 'Fecha desconocida';
             if (log.timestamp) {
                 try {
-                    const date = log.timestamp._seconds 
-                        ? new Date(log.timestamp._seconds * 1000) 
-                        : new Date(log.timestamp);
-                    dateString = date.toISOString().split('T')[0];
+                    let dateObj;
+            
+                    // Soporte para Firestore o strings con hora en español
+                    if (log.timestamp._seconds) {
+                        dateObj = new Date(log.timestamp._seconds * 1000);
+                    } else {
+                        // Parseo robusto para fechas tipo "13/4/2025, 5:14:08 a.m."
+                        const parts = log.timestamp.split(',')[0].split('/');
+                        if (parts.length === 3) {
+                            const [day, month, year] = parts;
+                            dateObj = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                        } else {
+                            dateObj = new Date(log.timestamp);
+                        }
+                    }
+            
+                    // Solo tomar año-mes-día
+                    dateString = dateObj.toISOString().split('T')[0];
                 } catch (e) {
                     console.warn("Error procesando fecha:", log.timestamp);
                 }
             }
+            
             counters.daily[serverKey][dateString] = (counters.daily[serverKey][dateString] || 0) + 1;
         });
 
@@ -190,7 +205,7 @@ const Logs = () => {
     }, [logs]);
 
     const { statusChart, timeChart, methodChart, dailyChart } = processedData;
-    
+
     return (
         <div className="container mt-4">
             <h2 className="text-center mb-4">Dashboard de Monitoreo</h2>
