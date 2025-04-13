@@ -20,7 +20,7 @@ const Login = () => {
     const handleRegister = async (e) => {
         e.preventDefault();
         try{
-            const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, {
+            const res = await axios.post(`${process.env.REACT_APP_API_URL}/register`, {
                 email,
                 username,
                 nombre,

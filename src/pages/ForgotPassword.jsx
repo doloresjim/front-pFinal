@@ -162,7 +162,7 @@ function ForgotPassword() {
                 </div>
               </form>
               <div className="text-center mt-3">
-                <a href="/login" className="text-decoration-none">
+                <a href="/" className="text-decoration-none">
                   Volver al inicio de sesión
                 </a>
               </div>
