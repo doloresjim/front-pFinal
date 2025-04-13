@@ -175,7 +175,7 @@ useEffect(() => {
     return (
         <div className ="card" style = {{ width: '450px', marginLeft: '35%', marginTop: '6%' , marginBottom: '10%'}}>
             <div className ="card-body">   
-                <h1 className ="card-title text-center">Autenticación con QR</h1>
+                <h1 className ="card-title text-center">Autenticación con QR...</h1>
                 {step === "login" && (
                     <form onSubmit={handleLogin}>
                     <h1 className ="card-subtitle mb-2 text-body-secondary text-center">Login</h1>
@@ -340,7 +340,7 @@ useEffect(() => {
                     />
                     </div> 
                     <button className="btn btn-warning" style = {{ marginLeft: '110px'}}  type="submit">Verificar</button>
-                    <button className="btn btn-success" style = {{ marginLeft: '55px'}} onClick={() => setStep("login")}>Login</button>
+                    <button className="btn btn-success" style = {{ marginLeft: '60px'}} onClick={() => setStep("login")}>Login</button>
                     </form>
                 )}
 
