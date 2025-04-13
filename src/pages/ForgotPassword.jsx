@@ -68,8 +68,9 @@ function PasswordResetRequest() {
           if (!res.ok) throw new Error(resData.message || 'Error');
 
           Swal.fire('Listo', 'Contraseña actualizada correctamente', 'success');
-        } catch (err) {
-          Swal.fire('Error', err.message, 'error');
+        } catch (error) {
+          console.error("Error en request-password-reset:", error);
+          res.status(500).json({ message: "Error en el servidor", error: error.message });
         }
       }
     });
