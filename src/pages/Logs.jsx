@@ -16,21 +16,50 @@ const Logs = () => {
     const [methodChartData, setMethodChartData] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    
+
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Datos de Logs',
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
+    const fetchLogs = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/getServer`);
+            if (response.data.logs && response.data.logs.length > 0) {
+                setLogs(response.data.logs);
+                procesarDatos(response.data.logs);
+                procesarTiemposRespuesta(response.data.logs);
+                procesarDatosPorFecha(response.data.logs);
+                procesarDatosPorMethod(response.data.logs);
+            }
+        } catch (err) {
+            setError("Error obteniendo logs. Por favor intente nuevamente.");
+            console.error("Error obteniendo logs: ", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
 console.log(logs);
-    useEffect(() => {
-        axios.get(`${process.env.REACT_APP_API_URL}/getServer`)
-            .then(response => {
-                if (response.data.logs && response.data.logs.length > 0) {
-                    setLogs(response.data.logs);
-                    procesarDatos(response.data.logs);
-                    procesarTiemposRespuesta(response.data.logs);
-                    procesarDatosPorFecha(response.data.logs);  
-                    procesarDatosPorMethod(response.data.logs);
-                }
-            })
-            .catch(error => console.error("Error obteniendo logs: ", error));
-    }, []);
+useEffect(() => {
+    fetchLogs();
+}, []);
 
     console.log(logs);
 
