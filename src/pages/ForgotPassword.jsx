@@ -26,8 +26,7 @@ function ForgotPassword() {
           icon: 'success',
           title: 'Proceso de recuperación iniciado',
           html: `
-            <p>Si el email existe en nuestro sistema, podrás usar el código MFA para restablecer tu contraseña.</p>
-            <p><small>Token: ${response.data.resetToken}</small></p>
+            <p>Tienes que usar el código MFA para restablecer tu contraseña.</p> 
           `,
           confirmButtonText: 'Continuar',
         }).then(() => {
@@ -117,7 +116,7 @@ function ForgotPassword() {
           text: 'Tu contraseña ha sido cambiada exitosamente',
           confirmButtonText: 'Iniciar sesión'
         }).then(() => {
-          window.location.href = '/login';
+          window.location.href = '/';
         });
       }
     });
